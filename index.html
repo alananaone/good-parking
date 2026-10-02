@@ -41,7 +41,7 @@
       flex-direction: column;
     }
 
-    /* 頂部導覽列（頁首） */
+    /* 頂部導覽列（以停車為主，其他功能收納於下拉） */
     header {
       background-color: var(--palette-base);
       border: 1px solid var(--palette-line);
@@ -54,23 +54,28 @@
     }
 
     .brand-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       letter-spacing: 0.02em;
       color: var(--palette-ink);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    /* 分段切換器（俐落微圓角 4px，拒絕大弧度膠囊） */
+    .header-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 核心切換器（以即時停車為主） */
     .pill-switcher {
       display: inline-flex;
       background-color: var(--palette-subtle);
       border: 1px solid var(--palette-line);
       border-radius: 4px;
       padding: 3px;
-      gap: 2px;
     }
 
     .pill-btn {
@@ -95,6 +100,78 @@
       color: var(--palette-base);
     }
 
+    /* 其他功能收納下拉選單 */
+    .dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .btn-dropdown-toggle {
+      background-color: var(--palette-base);
+      color: var(--palette-muted);
+      border: 1px solid var(--palette-line);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.12s ease;
+    }
+
+    .btn-dropdown-toggle:hover {
+      color: var(--palette-ink);
+      border-color: var(--palette-line-strong);
+    }
+
+    .btn-dropdown-toggle.active {
+      background-color: var(--palette-subtle);
+      color: var(--palette-ink);
+      border-color: var(--palette-ink);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      min-width: 170px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      padding: 4px 0;
+    }
+
+    .dropdown-menu.show {
+      display: flex;
+    }
+
+    .dropdown-item {
+      background: none;
+      border: none;
+      padding: 9px 14px;
+      text-align: left;
+      font-size: 0.82rem;
+      color: var(--palette-ink);
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.1s ease;
+    }
+
+    .dropdown-item:hover {
+      background-color: var(--palette-subtle);
+    }
+
+    .dropdown-item.current {
+      font-weight: 700;
+      background-color: var(--palette-subtle);
+    }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -102,25 +179,9 @@
     }
 
     .sync-status-indicator {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--palette-muted);
       font-family: "JetBrains Mono", ui-monospace, monospace;
-    }
-
-    .btn-action {
-      background-color: var(--palette-ink);
-      color: var(--palette-base);
-      border: 1px solid var(--palette-ink);
-      padding: 6px 14px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s ease;
-    }
-
-    .btn-action:hover {
-      opacity: 0.88;
     }
 
     /* 主內容區 */
@@ -132,39 +193,175 @@
       gap: 16px;
     }
 
-    /* 頂部即時指標列（KPI 指標列） */
-    .kpi-row {
+    /* 手機友善之戰術情報列（取代原先四個靜態大指標） */
+    .tactical-container {
+      width: 100%;
+    }
+
+    .tactical-panel {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 12px;
     }
 
-    .kpi-card {
+    /* 狀態 A：已提供定位 */
+    .tactical-card {
       background-color: var(--palette-base);
       border: 1px solid var(--palette-line);
       border-radius: 4px;
       padding: 14px 18px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
     }
 
-    .kpi-label {
+    .tactical-card:hover {
+      border-color: var(--palette-line-strong);
+      background-color: var(--palette-surface);
+    }
+
+    .tactical-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tactical-tag {
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
+      color: var(--palette-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .tactical-dist {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #2D6A4F;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    .tactical-road-name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--palette-ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tactical-fraction-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .fraction-val {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #2D6A4F;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    .fraction-label {
+      font-size: 0.75rem;
       color: var(--palette-muted);
     }
 
-    .kpi-val {
-      font-size: 1.4rem;
-      font-weight: 700;
+    .tactical-hint {
+      font-size: 0.72rem;
+      color: var(--palette-faint);
+    }
+
+    .tactical-fee-main {
+      font-size: 1.35rem;
+      font-weight: 800;
       color: var(--palette-ink);
       font-family: "JetBrains Mono", ui-monospace, monospace;
     }
 
-    .kpi-sub {
+    .tactical-fee-sub {
+      font-size: 0.78rem;
+      color: var(--palette-muted);
+    }
+
+    .btn-relocate {
+      background: none;
+      border: 1px solid var(--palette-line);
+      border-radius: 3px;
+      padding: 2px 8px;
       font-size: 0.72rem;
-      color: var(--palette-faint);
+      font-weight: 600;
+      color: var(--palette-muted);
+      cursor: pointer;
+    }
+
+    .btn-relocate:hover {
+      color: var(--palette-ink);
+      border-color: var(--palette-ink);
+    }
+
+    /* 狀態 B：未授權定位（功能提示與跳轉） */
+    .tactical-fallback-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .tactical-fallback-card:hover {
+      border-color: var(--palette-line-strong);
+      background-color: var(--palette-surface);
+      transform: translateY(-1px);
+    }
+
+    .tactical-fallback-card.primary {
+      background-color: var(--palette-subtle);
+      border-color: var(--palette-line-strong);
+    }
+
+    .fallback-num {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .fallback-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .fallback-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--palette-ink);
+    }
+
+    .fallback-desc {
+      font-size: 0.74rem;
+      color: var(--palette-muted);
+    }
+
+    .fallback-arrow {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--palette-muted);
     }
 
     /* 分頁視圖容器 */
@@ -239,7 +436,8 @@
 
     .input-text:focus-visible,
     .btn-action:focus-visible,
-    .pill-btn:focus-visible {
+    .pill-btn:focus-visible,
+    .btn-dropdown-toggle:focus-visible {
       outline: 2px solid var(--palette-ink);
       outline-offset: 1px;
     }
@@ -504,6 +702,22 @@
       color: #A44A4A;
     }
 
+    .btn-action {
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+      border: 1px solid var(--palette-ink);
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .btn-action:hover {
+      opacity: 0.88;
+    }
+
     /* 頁尾 */
     footer {
       background-color: var(--palette-surface);
@@ -517,19 +731,31 @@
 </head>
 <body>
 
-  <!-- 頂部標頭與分段切換器 -->
+  <!-- 頂部標頭（以停車為主，其他功能收納於下拉選單） -->
   <header>
     <div class="brand-title">
-      <span>臺北市路邊停車智慧導航與管理系統</span>
+      <span>臺北市路邊停車</span>
     </div>
 
-    <!-- 分段切換器（四個核心視圖） -->
-    <nav class="pill-switcher" role="tablist">
-      <button class="pill-btn active" onclick="switchTab('map-view', this)">即時空位地圖</button>
-      <button class="pill-btn" onclick="switchTab('list-view', this)">收費路段清冊</button>
-      <button class="pill-btn" onclick="switchTab('loading-view', this)">營業臨停專區</button>
-      <button class="pill-btn" onclick="switchTab('stats-view', this)">停車數據儀表板</button>
-    </nav>
+    <!-- 導覽功能組 -->
+    <div class="header-nav-group">
+      <nav class="pill-switcher" role="tablist">
+        <button class="pill-btn active" id="tab-btn-map" onclick="switchTab('map-view', this)">即時找車位</button>
+      </nav>
+
+      <!-- 收納其他三項功能的下拉選單 -->
+      <div class="dropdown-wrapper">
+        <button class="btn-dropdown-toggle" id="dropdown-toggle-btn" onclick="toggleFeatureDropdown()">
+          <span id="dropdown-toggle-label">其他功能</span>
+          <span style="font-size: 0.65rem;">▼</span>
+        </button>
+        <div class="dropdown-menu" id="feature-dropdown-menu">
+          <button class="dropdown-item" onclick="switchFromDropdown('list-view', '收費路段清冊')">收費路段清冊</button>
+          <button class="dropdown-item" onclick="switchFromDropdown('loading-view', '營業臨停專區')">營業臨停專區</button>
+          <button class="dropdown-item" onclick="switchFromDropdown('stats-view', '停車數據儀表板')">停車數據儀表板</button>
+        </div>
+      </div>
+    </div>
 
     <div class="header-actions">
       <span class="sync-status-indicator" id="live-sync-indicator">雲端定時自動同步中...</span>
@@ -537,27 +763,62 @@
   </header>
 
   <main>
-    <!-- 全域指標摘要（KPI 指標列） -->
-    <section class="kpi-row">
-      <div class="kpi-card">
-        <span class="kpi-label">收費路段總數</span>
-        <span class="kpi-val" id="kpi-total-roads">2,342</span>
-        <span class="kpi-sub">臺北市停車管理工程處登記</span>
+    <!-- 手機優先戰術情報面板（取代原先四個靜態大指標） -->
+    <section class="tactical-container" id="tactical-header-container">
+      <!-- 狀態 A：【同意提供位置】 -->
+      <div id="tactical-location-granted" class="tactical-panel" style="display: none;">
+        <div class="tactical-card" onclick="focusNearestRoad()">
+          <div class="tactical-card-header">
+            <span class="tactical-tag">最近空位路段</span>
+            <span class="tactical-dist" id="nearest-spot-distance">計算中...</span>
+          </div>
+          <div class="tactical-road-name" id="nearest-spot-name">正在搜尋最近可用車格...</div>
+          <div class="tactical-fraction-row">
+            <span class="fraction-val" id="nearest-spot-fraction">- / -</span>
+            <span class="fraction-label">剩餘可用／總格位</span>
+          </div>
+          <div class="tactical-hint">點擊此卡片直接在地圖上聚焦定位該路段</div>
+        </div>
+
+        <div class="tactical-card">
+          <div class="tactical-card-header">
+            <span class="tactical-tag">收費費率規程</span>
+            <button class="btn-relocate" onclick="event.stopPropagation(); requestUserLocation(true)">重新定位</button>
+          </div>
+          <div class="tactical-fee-main" id="nearest-spot-fee">每小時 30 元</div>
+          <div class="tactical-fee-sub" id="nearest-spot-time">09:00 至 17:00 收費（收費時段外免費停放）</div>
+          <div class="tactical-hint" id="nearest-district-note">臺北市公有路邊收費標準</div>
+        </div>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-label">即時可用空位</span>
-        <span class="kpi-val" id="kpi-avail-spaces">載入中...</span>
-        <span class="kpi-sub">剩餘可停放路邊格位數</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">路邊收費車位總量</span>
-        <span class="kpi-val" id="kpi-total-spaces">載入中...</span>
-        <span class="kpi-sub">全市路邊劃設格位總額</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">營業共用臨停區</span>
-        <span class="kpi-val" id="kpi-loading-zones">225</span>
-        <span class="kpi-sub">物流外送專用點位</span>
+
+      <!-- 狀態 B：【不同意提供位置／功能提示與跳轉】 -->
+      <div id="tactical-location-denied" class="tactical-panel">
+        <div class="tactical-fallback-card" onclick="scrollToDistrictSelector()">
+          <span class="fallback-num">1</span>
+          <div class="fallback-content">
+            <div class="fallback-title">選擇分區（跳轉）</div>
+            <div class="fallback-desc">依臺北市 12 行政區快速過濾空位</div>
+          </div>
+          <span class="fallback-arrow">→</span>
+        </div>
+
+        <div class="tactical-fallback-card primary" onclick="requestUserLocation(true)">
+          <span class="fallback-num">2</span>
+          <div class="fallback-content">
+            <div class="fallback-title">開啟定位功能</div>
+            <div class="fallback-desc">即時計算離您最近的空位路段與費率</div>
+          </div>
+          <span class="fallback-arrow">→</span>
+        </div>
+
+        <div class="tactical-fallback-card" onclick="focusSearchInput()">
+          <span class="fallback-num">3</span>
+          <div class="fallback-content">
+            <div class="fallback-title">輸入地址或路名</div>
+            <div class="fallback-desc">直接搜尋目標街道立即查詢在席狀態</div>
+          </div>
+          <span class="fallback-arrow">→</span>
+        </div>
       </div>
     </section>
 
@@ -576,7 +837,7 @@
           </label>
 
           <div class="form-group">
-            <span class="form-label">行政分區篩選</span>
+            <span class="form-label" style="font-size:0.78rem; font-weight:700; color:var(--palette-muted);">行政分區篩選</span>
             <div class="filter-pills" id="district-filter-pills">
               <span class="filter-tag selected" onclick="filterByDistrict('全部', this)">全部行政區</span>
               <span class="filter-tag" onclick="filterByDistrict('中正區', this)">中正區</span>
@@ -596,7 +857,7 @@
 
           <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span class="form-label">路段即時清單</span>
+              <span style="font-size:0.75rem; font-weight:700; color:var(--palette-muted);">路段即時清單</span>
               <span id="filtered-road-count" style="font-size: 0.72rem; color: var(--palette-muted);">載入中...</span>
             </div>
             <div class="road-list-mini" id="road-mini-list"></div>
@@ -692,9 +953,12 @@
     let displayedRoads = [];
     let mapInstance = null;
     let mapMarkersLayer = null;
+    let userLocationMarker = null;
     let currentMarkerEntities = []; // 儲存標記與狀態以支援動態縮放半徑
     let selectedDistrict = '全部';
     let allLoadingZones = [];
+    let userCoords = null;
+    let nearestRoadCache = null;
 
     // 初始化應用程式
     window.addEventListener('DOMContentLoaded', () => {
@@ -702,32 +966,59 @@
       fetchRoadsData();
       fetchOverviewStats();
       fetchLoadingZones();
+      requestUserLocation(false);
     });
 
-    // 分頁切換
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.pill-btn').forEach(el => el.classList.remove('active'));
-      
-      document.getElementById(tabId).classList.add('active');
-      btn.classList.add('active');
-
-      if (tabId === 'map-view' && mapInstance) {
-        setTimeout(() => mapInstance.invalidateSize(), 200);
+    // 點擊頁面其他區域自動關閉下拉選單
+    window.addEventListener('click', (e) => {
+      const wrapper = document.querySelector('.dropdown-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById('feature-dropdown-menu').classList.remove('show');
       }
+    });
+
+    // 切換其他功能下拉選單展開／收合
+    function toggleFeatureDropdown() {
+      const menu = document.getElementById('feature-dropdown-menu');
+      menu.classList.toggle('show');
+    }
+
+    // 自下拉選單跳轉至次要功能
+    function switchFromDropdown(tabId, label) {
+      document.getElementById('feature-dropdown-menu').classList.remove('show');
+      document.getElementById('tab-btn-map').classList.remove('active');
+      document.getElementById('dropdown-toggle-btn').classList.add('active');
+      document.getElementById('dropdown-toggle-label').textContent = label;
+
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+
       if (tabId === 'stats-view') {
         renderCharts();
       }
     }
 
+    // 分頁切換
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+
+      document.getElementById('tab-btn-map').classList.add('active');
+      document.getElementById('dropdown-toggle-btn').classList.remove('active');
+      document.getElementById('dropdown-toggle-label').textContent = '其他功能';
+
+      if (tabId === 'map-view' && mapInstance) {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+      }
+    }
+
     // 初始化 Leaflet GIS 地圖（預設採用簡約灰階底圖）
     function initMap() {
-      // 臺北市中心坐標
       mapInstance = L.map('parking-map', {
         zoomControl: true
       }).setView([25.0421, 121.5328], 13);
 
-      // 1. 簡約灰階畫布底圖（預設套用，乾淨專業且零干擾）
+      // 1. 簡約灰階畫布底圖（預設套用）
       const esriGrayLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 16,
         attribution: '&copy; Esri &copy; DeLorme, NAVTEQ'
@@ -745,10 +1036,8 @@
         attribution: '&copy; Esri &copy; OpenStreetMap'
       });
 
-      // 預設套用灰階底圖
       esriGrayLayer.addTo(mapInstance);
 
-      // 圖層控制切換器
       const baseMaps = {
         '簡約灰階地圖（預設）': esriGrayLayer,
         '臺灣通用電子地圖': nlscLayer,
@@ -758,13 +1047,12 @@
 
       mapMarkersLayer = L.layerGroup().addTo(mapInstance);
 
-      // 監聽縮放等級變更：當地圖放大到一定百分比時，圓點相應變大 15% 以上
       mapInstance.on('zoomend', () => {
         updateMarkerRadii();
       });
     }
 
-    // 依縮放等級動態計算圓點半徑（放大時增幅 15% 以上，縮小時自動收斂避免全圖混亂）
+    // 依縮放等級動態計算圓點半徑（放大時增幅 15% 以上）
     function getScaledRadius(isAvailable, isFull, zoom) {
       let base = isAvailable ? 5.0 : (isFull ? 4.0 : 3.0);
       if (zoom <= 12) {
@@ -791,21 +1079,157 @@
       });
     }
 
-    // 抓取路段資料（優先讀取靜態極速 live_roads.json，備援 /api/roads）
+    // 地理距離計算（球面 Haversine 演算法，回傳公尺）
+    function getDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    // 請求使用者定位
+    function requestUserLocation(isUserInitiated) {
+      if (!('geolocation' in navigator)) {
+        showLocationDenied();
+        if (isUserInitiated) alert('您的瀏覽器不支援定位功能。');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userCoords = {
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude
+          };
+          showLocationGranted();
+          updateNearestParkingTactical();
+        },
+        (err) => {
+          showLocationDenied();
+          if (isUserInitiated) {
+            alert('無法取得您的位置權限，請確認瀏覽器已允許存取位置資訊。');
+          }
+        },
+        { timeout: 8000, maximumAge: 60000, enableHighAccuracy: true }
+      );
+    }
+
+    function showLocationGranted() {
+      document.getElementById('tactical-location-granted').style.display = 'grid';
+      document.getElementById('tactical-location-denied').style.display = 'none';
+
+      // 在地圖上繪製使用者所在位置標記
+      if (userCoords && mapInstance) {
+        if (userLocationMarker) {
+          mapInstance.removeLayer(userLocationMarker);
+        }
+        userLocationMarker = L.circleMarker([userCoords.lat, userCoords.lon], {
+          radius: 7,
+          fillColor: '#3B82F6',
+          color: '#FFFFFF',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 1
+        }).addTo(mapInstance);
+        userLocationMarker.bindTooltip('您的目前位置', { direction: 'top' });
+      }
+    }
+
+    function showLocationDenied() {
+      document.getElementById('tactical-location-granted').style.display = 'none';
+      document.getElementById('tactical-location-denied').style.display = 'grid';
+    }
+
+    // 計算並呈現最近停車點位與費率
+    function updateNearestParkingTactical() {
+      if (!userCoords || allRoads.length === 0) return;
+
+      // 優先尋找「仍有空位」且距離最近之路段
+      let minAvailDist = Infinity;
+      let nearestAvailRoad = null;
+
+      // 備援：距離最近之任意路段
+      let minAnyDist = Infinity;
+      let nearestAnyRoad = null;
+
+      allRoads.forEach(road => {
+        if (!road.lat || !road.lon) return;
+        const d = getDistanceMeters(userCoords.lat, userCoords.lon, road.lat, road.lon);
+
+        if (d < minAnyDist) {
+          minAnyDist = d;
+          nearestAnyRoad = road;
+        }
+
+        if (road.avail_spaces > 0 && d < minAvailDist) {
+          minAvailDist = d;
+          nearestAvailRoad = road;
+        }
+      });
+
+      const target = nearestAvailRoad || nearestAnyRoad;
+      nearestRoadCache = target;
+
+      if (!target) return;
+
+      const distMeters = nearestAvailRoad ? minAvailDist : minAnyDist;
+      const distStr = distMeters < 1000 ? `距離約 ${distMeters} 公尺` : `距離約 ${(distMeters / 1000).toFixed(1)} 公里`;
+
+      document.getElementById('nearest-spot-distance').textContent = distStr;
+      document.getElementById('nearest-spot-name').textContent = `${target.name}（${target.district}）`;
+
+      const avail = target.avail_spaces > 0 ? target.avail_spaces : 0;
+      const total = target.total_spaces > 0 ? target.total_spaces : 0;
+      document.getElementById('nearest-spot-fraction').textContent = `${avail} / ${total} 格`;
+
+      document.getElementById('nearest-spot-fee').textContent = target.fee_str || '每小時 30 元';
+      document.getElementById('nearest-spot-time').textContent = '收費時段依該路段公告（非收費時段免費停放）';
+      document.getElementById('nearest-district-note').textContent = `${target.district}公有路邊收費車位`;
+    }
+
+    // 聚焦最近路段
+    function focusNearestRoad() {
+      if (nearestRoadCache && mapInstance) {
+        switchTab('map-view', document.getElementById('tab-btn-map'));
+        mapInstance.setView([nearestRoadCache.lat, nearestRoadCache.lon], 17, { animate: true });
+        openRoadModal(nearestRoadCache.road_id);
+      }
+    }
+
+    // 功能跳轉輔助
+    function scrollToDistrictSelector() {
+      switchTab('map-view', document.getElementById('tab-btn-map'));
+      const pills = document.getElementById('district-filter-pills');
+      if (pills) {
+        pills.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function focusSearchInput() {
+      switchTab('map-view', document.getElementById('tab-btn-map'));
+      const input = document.getElementById('map-search-input');
+      if (input) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus();
+      }
+    }
+
+    // 抓取路段資料
     async function fetchRoadsData() {
       try {
         let resp = null;
         let json = null;
 
-        // 優先嘗試讀取 Jamstack 靜態 JSON
         try {
           resp = await fetch('/api_data/live_roads.json?v=' + Date.now());
           if (resp.ok) {
             json = await resp.json();
           }
-        } catch (e) {
-          // 靜態檔未命中時降級請求動態 API
-        }
+        } catch (e) {}
 
         if (!json) {
           resp = await fetch('/api/roads?limit=2500');
@@ -814,14 +1238,7 @@
 
         allRoads = json.roads || [];
         displayedRoads = allRoads;
-        
-        // 更新頂部 KPI
-        const totalAvail = json.avail_spaces || allRoads.reduce((acc, r) => acc + (r.avail_spaces > 0 ? r.avail_spaces : 0), 0);
-        const totalSpaces = json.total_spaces || allRoads.reduce((acc, r) => acc + (r.total_spaces > 0 ? r.total_spaces : 0), 0);
 
-        document.getElementById('kpi-avail-spaces').textContent = totalAvail.toLocaleString();
-        document.getElementById('kpi-total-spaces').textContent = totalSpaces.toLocaleString();
-        
         if (json.update_time) {
           document.getElementById('live-sync-indicator').textContent = '最後更新：' + json.update_time;
         } else {
@@ -831,12 +1248,13 @@
         updateMapMarkers();
         renderRoadMiniList();
         renderFullTable();
+        updateNearestParkingTactical();
       } catch (err) {
         console.error('抓取路段資料失敗：', err);
       }
     }
 
-    // 更新地圖標記（乾淨向量圓點 CircleMarker，動態縮放支援）
+    // 更新地圖標記
     function updateMapMarkers() {
       if (!mapMarkersLayer) return;
       mapMarkersLayer.clearLayers();
@@ -869,7 +1287,6 @@
           fillOpacity: 0.9
         });
 
-        // 懸停浮動提示（Tooltip）
         const tipText = isAvailable ? `${road.name}（空位 ${road.avail_spaces} 格）` : (isFull ? `${road.name}（已額滿）` : `${road.name}（未量測）`);
         marker.bindTooltip(tipText, {
           direction: 'top',
@@ -877,7 +1294,6 @@
           opacity: 0.95
         });
 
-        // 點擊詳細 Popup
         const popupContent = `
           <div style="font-family:sans-serif; color:#111827; min-width:210px; padding:4px;">
             <div style="font-weight:700; font-size:14px; margin-bottom:4px;">${road.name}</div>
@@ -901,7 +1317,7 @@
       });
     }
 
-    // 渲染側欄簡易路段清單（純文字排版，無 Badge）
+    // 渲染側欄簡易路段清單
     function renderRoadMiniList() {
       const container = document.getElementById('road-mini-list');
       document.getElementById('filtered-road-count').textContent = `共 ${displayedRoads.length} 條路段`;
@@ -962,7 +1378,7 @@
       }
     }
 
-    // 渲染清冊表格（純文字數字排版，不使用色塊 Badge）
+    // 渲染清冊表格
     function renderFullTable() {
       const tbody = document.getElementById('full-road-table-body');
       const list = displayedRoads.slice(0, 300);
@@ -992,7 +1408,6 @@
     // 開啟車格在席明細彈窗
     async function openRoadModal(roadId) {
       try {
-        // 先在記憶體已載入的 allRoads 中搜尋
         const target = allRoads.find(r => r.road_id === roadId);
         let cells = (target && target.cells) ? target.cells : [];
         let road = target;
@@ -1040,7 +1455,7 @@
       document.getElementById('cell-modal').classList.remove('show');
     }
 
-    // 營業臨停專區（臨停檢視）
+    // 營業臨停專區
     async function fetchLoadingZones() {
       try {
         let resp = await fetch('/api_data/shared_loading_zones.json');
@@ -1094,7 +1509,7 @@
     }
 
     function focusOnMapAndSwitch(lat, lon) {
-      switchTab('map-view', document.querySelectorAll('.pill-btn')[0]);
+      switchTab('map-view', document.getElementById('tab-btn-map'));
       setTimeout(() => {
         mapInstance.setView([lat, lon], 17, { animate: true });
         L.popup()
@@ -1112,7 +1527,6 @@
         if (resp.ok) {
           statsDataCache = await resp.json();
         } else {
-          // 靜態備援
           const dResp = await fetch('/api_data/district_paid_parking_stats.json');
           if (dResp.ok) {
             const dData = await dResp.json();
@@ -1132,11 +1546,10 @@
       }
     }
 
-    // 渲染儀表板圖表（純 SVG／HTML 長條圖）
+    // 渲染儀表板圖表
     function renderCharts() {
       if (!statsDataCache) return;
 
-      // 1. 行政區供給長條圖
       const dContainer = document.getElementById('district-chart-container');
       const districts = statsDataCache.districts || [];
       const maxCar = Math.max(...districts.map(d => d.car_total), 1);
@@ -1159,7 +1572,6 @@
         `;
       }).join('');
 
-      // 2. 歷史 35 年演進
       const hContainer = document.getElementById('historical-chart-container');
       const historical = statsDataCache.historical || [];
       if (historical.length === 0) {
