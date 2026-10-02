@@ -101,6 +101,12 @@
       gap: 12px;
     }
 
+    .sync-status-indicator {
+      font-size: 0.78rem;
+      color: var(--palette-muted);
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+
     .btn-action {
       background-color: var(--palette-ink);
       color: var(--palette-base);
@@ -386,69 +392,7 @@
       background-color: var(--palette-surface);
     }
 
-    /* 視圖三：智慧費用試算機 */
-    .calc-layout {
-      display: grid;
-      grid-template-columns: minmax(320px, 420px) 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 800px) {
-      .calc-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .calc-form-card {
-      background-color: var(--palette-base);
-      border: 1px solid var(--palette-line);
-      border-radius: 4px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .calc-result-card {
-      background-color: var(--palette-surface);
-      border: 1px solid var(--palette-line);
-      border-radius: 4px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--palette-muted);
-    }
-
-    .price-display {
-      font-size: 2.8rem;
-      font-weight: 800;
-      color: var(--palette-ink);
-      font-family: "JetBrains Mono", monospace;
-    }
-
-    .explanation-box {
-      background-color: var(--palette-base);
-      border: 1px solid var(--palette-line);
-      border-radius: 4px;
-      padding: 14px 16px;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-
-    /* 視圖四：營業臨停專區 */
+    /* 視圖三：營業臨停專區 */
     .loading-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -477,7 +421,7 @@
       line-height: 1.5;
     }
 
-    /* 視圖五：儀表板圖表 */
+    /* 視圖四：儀表板圖表 */
     .dashboard-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
@@ -579,17 +523,16 @@
       <span>臺北市路邊停車智慧導航與管理系統</span>
     </div>
 
-    <!-- 分段切換器（俐落微圓角，無 Emoji） -->
+    <!-- 分段切換器（四個核心視圖） -->
     <nav class="pill-switcher" role="tablist">
       <button class="pill-btn active" onclick="switchTab('map-view', this)">即時空位地圖</button>
       <button class="pill-btn" onclick="switchTab('list-view', this)">收費路段清冊</button>
-      <button class="pill-btn" onclick="switchTab('calc-view', this)">費用試算引擎</button>
       <button class="pill-btn" onclick="switchTab('loading-view', this)">營業臨停專區</button>
       <button class="pill-btn" onclick="switchTab('stats-view', this)">停車數據儀表板</button>
     </nav>
 
     <div class="header-actions">
-      <button class="btn-action" onclick="refreshLiveData()">即時同步在席資料</button>
+      <span class="sync-status-indicator" id="live-sync-indicator">雲端定時自動同步中...</span>
     </div>
   </header>
 
@@ -602,14 +545,14 @@
         <span class="kpi-sub">臺北市停車管理工程處登記</span>
       </div>
       <div class="kpi-card">
-        <span class="kpi-label">監測車格總數</span>
-        <span class="kpi-val" id="kpi-monitored-cells">26,438</span>
-        <span class="kpi-sub">即時動態在席監測格位</span>
-      </div>
-      <div class="kpi-card">
         <span class="kpi-label">即時可用空位</span>
         <span class="kpi-val" id="kpi-avail-spaces">載入中...</span>
         <span class="kpi-sub">剩餘可停放路邊格位數</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">路邊收費車位總量</span>
+        <span class="kpi-val" id="kpi-total-spaces">載入中...</span>
+        <span class="kpi-sub">全市路邊劃設格位總額</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">營業共用臨停區</span>
@@ -690,77 +633,7 @@
       </div>
     </div>
 
-    <!-- 視圖三：停車費用試算引擎（試算檢視） -->
-    <div id="calc-view" class="tab-view">
-      <div class="calc-layout">
-        <div class="calc-form-card">
-          <h3 style="font-size: 1.05rem; font-weight: 700;">停車費用試算條件設定</h3>
-          
-          <div class="form-group">
-            <label class="form-label">目標路段名稱</label>
-            <input type="text" id="calc-road-input" class="input-text" value="中山北路一段53巷" placeholder="請輸入路段名稱..." />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">預計停放時長（小時）</label>
-            <select id="calc-duration-select" class="input-text">
-              <option value="0.5">0.5 小時（30分鐘）</option>
-              <option value="1.0">1.0 小時</option>
-              <option value="1.5">1.5 小時</option>
-              <option value="2.0" selected>2.0 小時</option>
-              <option value="2.5">2.5 小時</option>
-              <option value="3.0">3.0 小時</option>
-              <option value="4.0">4.0 小時</option>
-              <option value="6.0">6.0 小時</option>
-              <option value="8.0">8.0 小時（全日停放）</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">進場時間（小時）</label>
-            <select id="calc-hour-select" class="input-text">
-              <option value="8">08:00</option>
-              <option value="9">09:00</option>
-              <option value="10" selected>10:00</option>
-              <option value="11">11:00</option>
-              <option value="13">13:00</option>
-              <option value="15">15:00</option>
-              <option value="17">17:00</option>
-              <option value="19">19:00</option>
-              <option value="21">21:00</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">進場星期</label>
-            <select id="calc-day-select" class="input-text">
-              <option value="1">星期一</option>
-              <option value="2">星期二</option>
-              <option value="3" selected>星期三</option>
-              <option value="4">星期四</option>
-              <option value="5">星期五</option>
-              <option value="6">星期六</option>
-              <option value="7">星期日（多數免收費）</option>
-            </select>
-          </div>
-
-          <button class="btn-action" style="padding: 10px;" onclick="calculateEstimatedFee()">立即試算停車費用</button>
-        </div>
-
-        <div class="calc-result-card">
-          <span class="form-label">預估停車費用試算結果</span>
-          <div class="price-display"><span id="calc-fee-display">100</span> <span style="font-size: 1.2rem; font-weight: 500;">新臺幣元</span></div>
-          <div class="explanation-box" id="calc-explanation-display">
-            正在計算試算結果...
-          </div>
-          <div style="font-size: 0.8rem; color: var(--palette-muted);">
-            備註：試算結果係依據臺北市停車管理工程處公告之路段費率規程與收費起訖時段試算。若遇特殊彈性放假或特殊管制時段，請以現場標誌牌面為準。
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 視圖四：營業臨停導航專區（臨停檢視） -->
+    <!-- 視圖三：營業臨停導航專區（臨停檢視） -->
     <div id="loading-view" class="tab-view">
       <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
         <input type="text" id="loading-search-input" class="input-text" style="max-width: 380px;" placeholder="搜尋商圈、路名或地址..." oninput="filterLoadingZones()" />
@@ -771,7 +644,7 @@
       </div>
     </div>
 
-    <!-- 視圖五：大數據儀表板（數據檢視） -->
+    <!-- 視圖四：大數據儀表板（數據檢視） -->
     <div id="stats-view" class="tab-view">
       <div class="dashboard-grid">
         <!-- 圖表一：各行政區公有車位供給分佈 -->
@@ -829,7 +702,6 @@
       fetchRoadsData();
       fetchOverviewStats();
       fetchLoadingZones();
-      calculateEstimatedFee();
     });
 
     // 分頁切換
@@ -902,8 +774,7 @@
       } else if (zoom === 14) {
         return base;
       } else if (zoom === 15) {
-        // 放大至 15 級時，半徑相應變大 15%
-        return base * 1.15;
+        return base * 1.15; // 放大至 15 級時，半徑相應變大 15%
       } else if (zoom === 16) {
         return base * 1.30;
       } else {
@@ -920,18 +791,43 @@
       });
     }
 
-    // 抓取全域路段資料
+    // 抓取路段資料（優先讀取靜態極速 live_roads.json，備援 /api/roads）
     async function fetchRoadsData() {
       try {
-        const resp = await fetch('/api/roads?limit=2500');
-        const json = await resp.json();
+        let resp = null;
+        let json = null;
+
+        // 優先嘗試讀取 Jamstack 靜態 JSON
+        try {
+          resp = await fetch('/api_data/live_roads.json?v=' + Date.now());
+          if (resp.ok) {
+            json = await resp.json();
+          }
+        } catch (e) {
+          // 靜態檔未命中時降級請求動態 API
+        }
+
+        if (!json) {
+          resp = await fetch('/api/roads?limit=2500');
+          json = await resp.json();
+        }
+
         allRoads = json.roads || [];
         displayedRoads = allRoads;
         
         // 更新頂部 KPI
-        const totalAvail = allRoads.reduce((acc, r) => acc + (r.avail_spaces > 0 ? r.avail_spaces : 0), 0);
+        const totalAvail = json.avail_spaces || allRoads.reduce((acc, r) => acc + (r.avail_spaces > 0 ? r.avail_spaces : 0), 0);
+        const totalSpaces = json.total_spaces || allRoads.reduce((acc, r) => acc + (r.total_spaces > 0 ? r.total_spaces : 0), 0);
+
         document.getElementById('kpi-avail-spaces').textContent = totalAvail.toLocaleString();
+        document.getElementById('kpi-total-spaces').textContent = totalSpaces.toLocaleString();
         
+        if (json.update_time) {
+          document.getElementById('live-sync-indicator').textContent = '最後更新：' + json.update_time;
+        } else {
+          document.getElementById('live-sync-indicator').textContent = '雲端自動定時同步中';
+        }
+
         updateMapMarkers();
         renderRoadMiniList();
         renderFullTable();
@@ -988,9 +884,8 @@
             <div style="font-size:12px; color:#4B5563; margin-bottom:6px;">行政區：${road.district}｜路段代碼：${road.road_id}</div>
             <div style="font-size:12px; margin-bottom:4px;"><strong>收費費率：</strong>${road.fee_str || '一般費率'}</div>
             <div style="font-size:12px; margin-bottom:4px;"><strong>車位狀況：</strong>剩餘 ${road.avail_spaces > 0 ? road.avail_spaces : 0} 格／共 ${road.total_spaces} 格</div>
-            <div style="margin-top:8px; display:flex; gap:6px;">
-              <button onclick="openRoadModal('${road.road_id}')" style="background:#EBF5EE; border:1px solid #D6E5DC; color:#2D6A4F; font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:600;">查看車格在席</button>
-              <button onclick="setCalcRoad('${road.name}')" style="background:#111827; border:1px solid #111827; color:#FFFFFF; font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:600;">帶入費用試算</button>
+            <div style="margin-top:8px;">
+              <button onclick="openRoadModal('${road.road_id}')" style="background:#EBF5EE; border:1px solid #D6E5DC; color:#2D6A4F; font-size:11px; padding:5px 10px; border-radius:3px; cursor:pointer; font-weight:600; width:100%;">查看在席格位明細</button>
             </div>
           </div>
         `;
@@ -1097,16 +992,29 @@
     // 開啟車格在席明細彈窗
     async function openRoadModal(roadId) {
       try {
-        const resp = await fetch(`/api/road/${roadId}`);
-        const data = await resp.json();
-        const road = data.road;
-        const cells = data.cells || [];
+        // 先在記憶體已載入的 allRoads 中搜尋
+        const target = allRoads.find(r => r.road_id === roadId);
+        let cells = (target && target.cells) ? target.cells : [];
+        let road = target;
+
+        if (!road || cells.length === 0) {
+          try {
+            const resp = await fetch(`/api/road/${roadId}`);
+            if (resp.ok) {
+              const data = await resp.json();
+              road = data.road || road;
+              cells = data.cells || cells;
+            }
+          } catch (e) {}
+        }
+
+        if (!road) return;
 
         document.getElementById('modal-road-title').textContent = `${road.name}（${road.district}）`;
         document.getElementById('modal-road-meta').textContent = `路段代碼：${road.road_id}｜費率：${road.fee_str || '一般'}｜目前總格位數：${road.total_spaces}｜剩餘可用：${road.avail_spaces}`;
 
         const grid = document.getElementById('modal-cell-grid');
-        if (cells.length === 0) {
+        if (!cells || cells.length === 0) {
           grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無回傳獨立在席車格狀態。</div>';
         } else {
           grid.innerHTML = cells.map(c => {
@@ -1132,41 +1040,18 @@
       document.getElementById('cell-modal').classList.remove('show');
     }
 
-    function setCalcRoad(roadName) {
-      document.getElementById('calc-road-input').value = roadName;
-      switchTab('calc-view', document.querySelectorAll('.pill-btn')[2]);
-      calculateEstimatedFee();
-    }
-
-    // 費用試算引擎（試算檢視）
-    async function calculateEstimatedFee() {
-      const roadName = encodeURIComponent(document.getElementById('calc-road-input').value.trim());
-      const duration = document.getElementById('calc-duration-select').value;
-      const startHour = document.getElementById('calc-hour-select').value;
-      const day = document.getElementById('calc-day-select').value;
-
-      try {
-        const url = `/api/fee-estimate?road_name=${roadName}&duration=${duration}&start_hour=${startHour}&day=${day}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
-
-        document.getElementById('calc-fee-display').textContent = data.estimated_fee;
-        document.getElementById('calc-explanation-display').innerHTML = `
-          <strong>【試算路段】</strong> ${data.road_name}<br>
-          <strong>【費率標準】</strong> ${data.fee_str}（收費時段：${data.charge_time_range}，星期：${data.charge_days}）<br>
-          <strong>【收費說明】</strong> ${data.explanation}
-        `;
-      } catch (err) {
-        console.error('試算失敗：', err);
-      }
-    }
-
     // 營業臨停專區（臨停檢視）
     async function fetchLoadingZones() {
       try {
-        const resp = await fetch('/api/loading-zones');
-        const json = await resp.json();
-        allLoadingZones = json.loading_zones || [];
+        let resp = await fetch('/api_data/shared_loading_zones.json');
+        let json = null;
+        if (resp.ok) {
+          allLoadingZones = await resp.json();
+        } else {
+          resp = await fetch('/api/loading-zones');
+          json = await resp.json();
+          allLoadingZones = json.loading_zones || [];
+        }
         renderLoadingZonesList(allLoadingZones);
       } catch (err) {
         console.error('抓取營業臨停失敗：', err);
@@ -1176,15 +1061,22 @@
     function renderLoadingZonesList(list) {
       const container = document.getElementById('loading-zones-grid');
       container.innerHTML = list.map(z => {
+        const dist = z.district || z['行政區'] || '臺北市';
+        const addr = z.address || z['地址'] || '';
+        const sp = z.spaces || z['格位數'] || 1;
+        const near = z.nearby || z['周邊景點或商圈'] || '鄰近商圈';
+        const lat = parseFloat(z.lat || z['場站緯度'] || 0);
+        const lon = parseFloat(z.lon || z['場站經度'] || 0);
+
         return `
           <div class="loading-card">
-            <div class="loading-card-title">${z.district}｜${z.address}</div>
+            <div class="loading-card-title">${dist}｜${addr}</div>
             <div class="loading-card-meta">
-              <strong>格位數量：</strong>共 ${z.spaces} 格<br>
-              <strong>鄰近地標：</strong>${z.nearby || '鄰近商圈'}<br>
-              <strong>坐標位置：</strong>${z.lat.toFixed(5)}, ${z.lon.toFixed(5)}
+              <strong>格位數量：</strong>共 ${sp} 格<br>
+              <strong>鄰近地標：</strong>${near}<br>
+              <strong>坐標位置：</strong>${lat.toFixed(5)}, ${lon.toFixed(5)}
             </div>
-            <button class="btn-action" style="padding:4px 8px; font-size:0.75rem; align-self:flex-start;" onclick="focusOnMapAndSwitch(${z.lat}, ${z.lon})">在地圖上查看</button>
+            <button class="btn-action" style="padding:4px 8px; font-size:0.75rem; align-self:flex-start;" onclick="focusOnMapAndSwitch(${lat}, ${lon})">在地圖上查看</button>
           </div>
         `;
       }).join('');
@@ -1193,7 +1085,10 @@
     function filterLoadingZones() {
       const kw = document.getElementById('loading-search-input').value.trim().toLowerCase();
       const filtered = allLoadingZones.filter(z => {
-        return z.district.toLowerCase().includes(kw) || z.address.toLowerCase().includes(kw) || (z.nearby && z.nearby.toLowerCase().includes(kw));
+        const dist = (z.district || z['行政區'] || '').toLowerCase();
+        const addr = (z.address || z['地址'] || '').toLowerCase();
+        const near = (z.nearby || z['周邊景點或商圈'] || '').toLowerCase();
+        return dist.includes(kw) || addr.includes(kw) || near.includes(kw);
       });
       renderLoadingZonesList(filtered);
     }
@@ -1213,8 +1108,25 @@
     let statsDataCache = null;
     async function fetchOverviewStats() {
       try {
-        const resp = await fetch('/api/stats');
-        statsDataCache = await resp.json();
+        let resp = await fetch('/api/stats');
+        if (resp.ok) {
+          statsDataCache = await resp.json();
+        } else {
+          // 靜態備援
+          const dResp = await fetch('/api_data/district_paid_parking_stats.json');
+          if (dResp.ok) {
+            const dData = await dResp.json();
+            statsDataCache = {
+              districts: dData.filter(d => d['分區'] && d['分區'] !== '總計' && d['分區'] !== '小計').map(d => ({
+                district: d['分區'],
+                car_total: parseInt(d['汽車總數值（格）'] || 0),
+                car_onstreet: parseInt(d['汽車路邊總數值（格）'] || 0),
+                car_offstreet: parseInt(d['汽車路外總數值（格）'] || 0)
+              })),
+              historical: []
+            };
+          }
+        }
       } catch (err) {
         console.error('抓取統計大數據失敗：', err);
       }
@@ -1250,6 +1162,10 @@
       // 2. 歷史 35 年演進
       const hContainer = document.getElementById('historical-chart-container');
       const historical = statsDataCache.historical || [];
+      if (historical.length === 0) {
+        hContainer.innerHTML = '<div style="font-size:0.8rem; color:var(--palette-muted); padding:10px;">歷史時間數列於本機資料庫維護中。</div>';
+        return;
+      }
       const sampleYears = historical.filter((_, idx) => idx % 4 === 0 || idx === historical.length - 1);
       const maxTotal = Math.max(...sampleYears.map(h => h.total_spaces), 1);
 
@@ -1267,27 +1183,6 @@
           </div>
         `;
       }).join('');
-    }
-
-    // 觸發即時資料同步
-    async function refreshLiveData() {
-      const btn = document.querySelector('.btn-action');
-      const originalText = btn.textContent;
-      btn.textContent = '同步資料中...';
-      btn.disabled = true;
-
-      try {
-        const resp = await fetch('/api/refresh', { method: 'POST' });
-        const res = await resp.json();
-        alert(res.message || '即時在席資料同步成功！');
-        fetchRoadsData();
-        fetchOverviewStats();
-      } catch (err) {
-        alert('同步失敗：' + err);
-      } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }
     }
   </script>
 </body>
