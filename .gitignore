@@ -13,3 +13,6 @@ downloads/*.zip
 
 # Vercel 佈署暫存
 .vercel/
+
+# 暫存 CSV 饋送
+api_data/new_taipei_live.csv

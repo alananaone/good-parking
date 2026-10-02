@@ -2,8 +2,17 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>臺北市路邊停車智慧導航與管理系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>雙北路邊停車智慧導航與管理系統</title>
+  <!-- PWA Web App Manifest 與行動端原生體驗標籤 -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#1F2526">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="雙北找車位">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <!-- Leaflet GIS Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -702,6 +711,11 @@
       color: #A44A4A;
     }
 
+    .cell-box.nodata {
+      background-color: #F3F4F6;
+      color: #6B7280;
+    }
+
     .btn-action {
       background-color: var(--palette-ink);
       color: var(--palette-base);
@@ -734,7 +748,7 @@
   <!-- 頂部標頭（以停車為主，其他功能收納於下拉選單） -->
   <header>
     <div class="brand-title">
-      <span>臺北市路邊停車</span>
+      <span>雙北路邊停車</span>
     </div>
 
     <!-- 導覽功能組 -->
@@ -761,6 +775,15 @@
       <span class="sync-status-indicator" id="live-sync-indicator">雲端定時自動同步中...</span>
     </div>
   </header>
+
+  <!-- PWA 行動裝置安裝提示橫條 -->
+  <div id="pwa-install-banner" style="display:none; align-items:center; justify-content:space-between; background:var(--palette-ink); color:var(--palette-base); padding:10px 20px; font-size:0.82rem; margin:12px 24px 0 24px; border-radius:4px; border:1px solid var(--palette-ink);">
+    <span style="font-weight:500;">安裝「雙北找車位」App 至手機主畫面，離線秒開查空位</span>
+    <div style="display:flex; gap:8px;">
+      <button onclick="triggerPwaInstall()" style="background:var(--palette-blue); color:var(--palette-ink); border:none; padding:4px 12px; border-radius:2px; font-weight:700; cursor:pointer;">安裝至手機</button>
+      <button onclick="document.getElementById('pwa-install-banner').style.display='none'" style="background:transparent; color:var(--palette-base); border:none; padding:4px 8px; cursor:pointer;">關閉</button>
+    </div>
+  </div>
 
   <main>
     <!-- 手機優先戰術情報面板（取代原先四個靜態大指標） -->
@@ -839,19 +862,27 @@
           <div class="form-group">
             <span class="form-label" style="font-size:0.78rem; font-weight:700; color:var(--palette-muted);">行政分區篩選</span>
             <div class="filter-pills" id="district-filter-pills">
-              <span class="filter-tag selected" onclick="filterByDistrict('全部', this)">全部行政區</span>
+              <span class="filter-tag selected" onclick="filterByDistrict('全部', this)">全部雙北</span>
+              <span class="filter-tag" onclick="filterByDistrict('臺北市全區', this)">臺北市全區</span>
+              <span class="filter-tag" onclick="filterByDistrict('新北市全區', this)">新北市全區</span>
+              <span class="filter-tag" onclick="filterByDistrict('板橋區', this)">板橋區</span>
+              <span class="filter-tag" onclick="filterByDistrict('三重區', this)">三重區</span>
+              <span class="filter-tag" onclick="filterByDistrict('中和區', this)">中和區</span>
+              <span class="filter-tag" onclick="filterByDistrict('永和區', this)">永和區</span>
+              <span class="filter-tag" onclick="filterByDistrict('新莊區', this)">新莊區</span>
+              <span class="filter-tag" onclick="filterByDistrict('新店區', this)">新店區</span>
+              <span class="filter-tag" onclick="filterByDistrict('林口區', this)">林口區</span>
               <span class="filter-tag" onclick="filterByDistrict('中正區', this)">中正區</span>
               <span class="filter-tag" onclick="filterByDistrict('大安區', this)">大安區</span>
-              <span class="filter-tag" onclick="filterByDistrict('中山區', this)">中山區</span>
               <span class="filter-tag" onclick="filterByDistrict('信義區', this)">信義區</span>
+              <span class="filter-tag" onclick="filterByDistrict('中山區', this)">中山區</span>
               <span class="filter-tag" onclick="filterByDistrict('松山區', this)">松山區</span>
-              <span class="filter-tag" onclick="filterByDistrict('內湖區', this)">內湖區</span>
-              <span class="filter-tag" onclick="filterByDistrict('士林區', this)">士林區</span>
-              <span class="filter-tag" onclick="filterByDistrict('北投區', this)">北投區</span>
               <span class="filter-tag" onclick="filterByDistrict('萬華區', this)">萬華區</span>
-              <span class="filter-tag" onclick="filterByDistrict('大同區', this)">大同區</span>
-              <span class="filter-tag" onclick="filterByDistrict('南港區', this)">南港區</span>
-              <span class="filter-tag" onclick="filterByDistrict('文山區', this)">文山區</span>
+              <span class="filter-tag" onclick="filterByDistrict('士林區', this)">士林區</span>
+              <span class="filter-tag" onclick="filterByDistrict('內湖區', this)">內湖區</span>
+              <span class="filter-tag" onclick="filterByDistrict('土城區', this)">土城區</span>
+              <span class="filter-tag" onclick="filterByDistrict('蘆洲區', this)">蘆洲區</span>
+              <span class="filter-tag" onclick="filterByDistrict('汐止區', this)">汐止區</span>
             </div>
           </div>
 
@@ -933,16 +964,17 @@
         <button class="btn-action" style="padding: 4px 10px;" onclick="closeModal()">關閉</button>
       </div>
       <div id="modal-road-meta" style="font-size: 0.8rem; color: var(--palette-muted);"></div>
-      <div style="display: flex; gap: 12px; font-size: 0.75rem;">
+      <div style="display: flex; gap: 12px; font-size: 0.75rem; flex-wrap: wrap;">
         <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background:#2D6A4F; border-radius:50%;"></span> 綠色圓點：空位可停</span>
         <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background:#A44A4A; border-radius:50%;"></span> 紅色圓點：有車佔用／已開單</span>
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background:#9CA3AF; border-radius:50%;"></span> 灰色圓點：無即時資料（一般格）</span>
       </div>
       <div class="cell-grid" id="modal-cell-grid"></div>
     </div>
   </div>
 
   <footer>
-    本系統資料由臺北市政府開放資料大平台授權提供｜符合 WCAG 2.1 AAA 級視覺對比規範｜純標準庫無外部重量級依賴架構
+    本系統資料由臺北市政府與新北市政府資料開放平臺授權提供｜符合 WCAG 2.1 AAA 級視覺對比規範｜支援 PWA 離線快取與跨雙北一體化導航
   </footer>
 
   <!-- Leaflet GIS Map JS -->
@@ -1180,7 +1212,8 @@
       const distStr = distMeters < 1000 ? `距離約 ${distMeters} 公尺` : `距離約 ${(distMeters / 1000).toFixed(1)} 公里`;
 
       document.getElementById('nearest-spot-distance').textContent = distStr;
-      document.getElementById('nearest-spot-name').textContent = `${target.name}（${target.district}）`;
+      const cityName = target.city ? `${target.city} ` : '';
+      document.getElementById('nearest-spot-name').textContent = `${target.name}（${cityName}${target.district}）`;
 
       const avail = target.avail_spaces > 0 ? target.avail_spaces : 0;
       const total = target.total_spaces > 0 ? target.total_spaces : 0;
@@ -1188,7 +1221,7 @@
 
       document.getElementById('nearest-spot-fee').textContent = target.fee_str || '每小時 30 元';
       document.getElementById('nearest-spot-time').textContent = '收費時段依該路段公告（非收費時段免費停放）';
-      document.getElementById('nearest-district-note').textContent = `${target.district}公有路邊收費車位`;
+      document.getElementById('nearest-district-note').textContent = `${cityName}${target.district}公有路邊收費車位`;
     }
 
     // 聚焦最近路段
@@ -1354,8 +1387,18 @@
       const availOnly = document.getElementById('avail-only-toggle').checked;
 
       displayedRoads = allRoads.filter(r => {
-        const matchDistrict = (selectedDistrict === '全部') || (r.district === selectedDistrict);
-        const matchKw = (!kw) || (r.name.toLowerCase().includes(kw)) || (r.road_id.includes(kw));
+        let matchDistrict = false;
+        if (selectedDistrict === '全部' || selectedDistrict === '全部雙北') {
+          matchDistrict = true;
+        } else if (selectedDistrict === '臺北市全區') {
+          matchDistrict = (r.city === '臺北市' || !r.city);
+        } else if (selectedDistrict === '新北市全區') {
+          matchDistrict = (r.city === '新北市');
+        } else {
+          matchDistrict = (r.district === selectedDistrict);
+        }
+
+        const matchKw = (!kw) || (r.name.toLowerCase().includes(kw)) || (r.road_id.toLowerCase().includes(kw)) || (r.district.includes(kw));
         const matchAvail = (!availOnly) || (r.avail_spaces > 0);
         return matchDistrict && matchKw && matchAvail;
       });
@@ -1440,17 +1483,36 @@
           </div>
         `;
 
+        const totalSpaces = road.total_spaces || 0;
+        let renderedCells = [...cells];
+        if (totalSpaces > renderedCells.length) {
+          const diff = totalSpaces - renderedCells.length;
+          for (let i = 1; i <= diff; i++) {
+            renderedCells.push({
+              ps_id: `一般格`,
+              cell_status: 0
+            });
+          }
+        }
+
         const grid = document.getElementById('modal-cell-grid');
-        if (!cells || cells.length === 0) {
-          grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無裝設智慧地磁感測器，請參考全路段預估剩餘格位或現場標線停放。</div>';
+        if (renderedCells.length === 0) {
+          grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無車格明細資料。</div>';
         } else {
-          grid.innerHTML = cells.map(c => {
-            const isFree = c.cell_status === 2;
-            const cls = isFree ? 'free' : 'busy';
-            const label = isFree ? '可停車' : '已佔用';
+          grid.innerHTML = renderedCells.map(c => {
+            let cls = 'nodata';
+            let label = '無資料';
+            if (c.cell_status === 2) {
+              cls = 'free';
+              label = '可停車';
+            } else if (c.cell_status === 1) {
+              cls = 'busy';
+              label = '已佔用';
+            }
+            const idText = c.ps_id.length <= 2 ? `格號 ${c.ps_id}` : c.ps_id;
             return `
               <div class="cell-box ${cls}">
-                <div>格號 ${c.ps_id}</div>
+                <div>${idText}</div>
                 <div style="font-size:0.65rem; font-weight:500;">${label}</div>
               </div>
             `;
@@ -1607,6 +1669,44 @@
           </div>
         `;
       }).join('');
+    }
+
+    // 註冊 PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => {
+            console.log('PWA ServiceWorker 註冊成功，Scope 為：', reg.scope);
+          })
+          .catch(err => {
+            console.warn('PWA ServiceWorker 註冊失敗：', err);
+          });
+      });
+    }
+
+    // PWA 安裝提示事件
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) {
+        banner.style.display = 'flex';
+      }
+    });
+
+    function triggerPwaInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('使用者接受安裝 PWA');
+          }
+          deferredPrompt = null;
+          const banner = document.getElementById('pwa-install-banner');
+          if (banner) banner.style.display = 'none';
+        });
+      }
     }
   </script>
 </body>
