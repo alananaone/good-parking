@@ -1425,12 +1425,24 @@
 
         if (!road) return;
 
+        const freeCount = cells.filter(c => c.cell_status === 2).length;
+        const busyCount = cells.filter(c => c.cell_status === 1).length;
+        const unmonitoredCount = Math.max(0, (road.total_spaces || 0) - cells.length);
+
         document.getElementById('modal-road-title').textContent = `${road.name}（${road.district}）`;
-        document.getElementById('modal-road-meta').textContent = `路段代碼：${road.road_id}｜費率：${road.fee_str || '一般'}｜目前總格位數：${road.total_spaces}｜剩餘可用：${road.avail_spaces}`;
+        document.getElementById('modal-road-meta').innerHTML = `
+          <div>路段代碼：${road.road_id}｜費率：${road.fee_str || '一般'}</div>
+          <div style="margin-top:4px; font-weight:600; color:var(--palette-ink);">
+            法定規劃總格位：${road.total_spaces} 格｜停管處預估全段剩餘：${road.avail_spaces} 格
+          </div>
+          <div style="margin-top:4px; font-size:0.75rem; color:var(--palette-muted); line-height:1.4;">
+            已連線智慧感測車格：共 ${cells.length} 格（${freeCount} 格空位、${busyCount} 格佔用）；其餘 ${unmonitoredCount} 格為未裝設地磁感測器或一般人工巡查開單格位。
+          </div>
+        `;
 
         const grid = document.getElementById('modal-cell-grid');
         if (!cells || cells.length === 0) {
-          grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無回傳獨立在席車格狀態。</div>';
+          grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無裝設智慧地磁感測器，請參考全路段預估剩餘格位或現場標線停放。</div>';
         } else {
           grid.innerHTML = cells.map(c => {
             const isFree = c.cell_status === 2;
