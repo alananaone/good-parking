@@ -732,6 +732,26 @@
       opacity: 0.88;
     }
 
+    /* 行動裝置專屬 PWA 安裝提示橫條（電腦桌機強制隱藏） */
+    .pwa-banner-mobile-only {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      margin: 8px 16px 0 16px;
+      border-radius: 4px;
+      border: 1px solid var(--palette-ink);
+    }
+
+    @media (min-width: 769px) {
+      .pwa-banner-mobile-only {
+        display: none !important;
+      }
+    }
+
     /* 頁尾 */
     footer {
       background-color: var(--palette-surface);
@@ -776,12 +796,12 @@
     </div>
   </header>
 
-  <!-- PWA 行動裝置安裝提示橫條 -->
-  <div id="pwa-install-banner" style="display:none; align-items:center; justify-content:space-between; background:var(--palette-ink); color:var(--palette-base); padding:10px 20px; font-size:0.82rem; margin:12px 24px 0 24px; border-radius:4px; border:1px solid var(--palette-ink);">
-    <span style="font-weight:500;">安裝「雙北找車位」App 至手機主畫面，離線秒開查空位</span>
-    <div style="display:flex; gap:8px;">
-      <button onclick="triggerPwaInstall()" style="background:var(--palette-blue); color:var(--palette-ink); border:none; padding:4px 12px; border-radius:2px; font-weight:700; cursor:pointer;">安裝至手機</button>
-      <button onclick="document.getElementById('pwa-install-banner').style.display='none'" style="background:transparent; color:var(--palette-base); border:none; padding:4px 8px; cursor:pointer;">關閉</button>
+  <!-- PWA 行動裝置安裝提示橫條（電腦端強制隱藏，手機端友善引導） -->
+  <div id="pwa-install-banner" class="pwa-banner-mobile-only">
+    <span id="pwa-banner-text" style="font-weight:500;">安裝「雙北找車位」App 至手機主畫面，離線秒開查空位</span>
+    <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+      <button id="pwa-install-btn" onclick="triggerPwaInstall()" style="background:var(--palette-blue); color:var(--palette-ink); border:none; padding:4px 12px; border-radius:2px; font-weight:700; cursor:pointer;">安裝至手機</button>
+      <button onclick="dismissPwaBanner()" style="background:transparent; color:var(--palette-base); border:none; padding:4px 8px; cursor:pointer;">關閉</button>
     </div>
   </div>
 
@@ -1495,6 +1515,22 @@
           }
         }
 
+        // 自然數字升冪排序：格號 1, 2, 3... 依序排列，未感測一般格排於最後
+        renderedCells.sort((a, b) => {
+          const matchA = a.ps_id.match(/\d+/);
+          const matchB = b.ps_id.match(/\d+/);
+          const numA = matchA ? parseInt(matchA[0], 10) : null;
+          const numB = matchB ? parseInt(matchB[0], 10) : null;
+
+          if (numA !== null && numB !== null) {
+            if (numA !== numB) return numA - numB;
+            return a.ps_id.localeCompare(b.ps_id, 'zh-Hant', { numeric: true });
+          }
+          if (numA !== null && numB === null) return -1;
+          if (numA === null && numB !== null) return 1;
+          return a.ps_id.localeCompare(b.ps_id, 'zh-Hant', { numeric: true });
+        });
+
         const grid = document.getElementById('modal-cell-grid');
         if (renderedCells.length === 0) {
           grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無車格明細資料。</div>';
@@ -1684,14 +1720,49 @@
       });
     }
 
-    // PWA 安裝提示事件
-    let deferredPrompt;
+    // 嚴格判斷是否為手機／行動端設備
+    function isMobileClient() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile/i.test(ua);
+      const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const isNarrow = window.innerWidth <= 768;
+      return isMobileUA || (isTouch && isNarrow);
+    }
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // PWA 安裝提示事件（嚴格限制：僅手機端有效，電腦端直接略過）
+    let deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
+
+      // 若為電腦端、或已處於獨立 App 模式、或使用者本次已點擊關閉，則不顯示
+      if (!isMobileClient() || isStandalone || sessionStorage.getItem('pwa_banner_dismissed')) {
+        return;
+      }
+
       const banner = document.getElementById('pwa-install-banner');
       if (banner) {
         banner.style.display = 'flex';
+      }
+    });
+
+    // 針對 iOS Safari 手機用戶提供加入主畫面指引
+    window.addEventListener('load', () => {
+      if (!isMobileClient() || isStandalone || sessionStorage.getItem('pwa_banner_dismissed')) {
+        return;
+      }
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) {
+        const banner = document.getElementById('pwa-install-banner');
+        const textSpan = document.getElementById('pwa-banner-text');
+        const btn = document.getElementById('pwa-install-btn');
+        if (banner && textSpan && btn) {
+          textSpan.textContent = '將「雙北找車位」加入 iPhone 主畫面：點擊下方分享按鈕並選擇「加入主畫面」';
+          btn.style.display = 'none';
+          banner.style.display = 'flex';
+        }
       }
     });
 
@@ -1703,10 +1774,15 @@
             console.log('使用者接受安裝 PWA');
           }
           deferredPrompt = null;
-          const banner = document.getElementById('pwa-install-banner');
-          if (banner) banner.style.display = 'none';
+          dismissPwaBanner();
         });
       }
+    }
+
+    function dismissPwaBanner() {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.style.display = 'none';
+      sessionStorage.setItem('pwa_banner_dismissed', '1');
     }
   </script>
 </body>
