@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>臺北市路邊停車智慧導航與管理系統</title>
+  <!-- Leaflet GIS Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* 全域簡約設計體系（純白底色、俐落幾何、極簡無過度弧度） */
+    :root {
+      --palette-base: #FFFFFF;
+      --palette-surface: #FAFAFA;
+      --palette-subtle: #F3F4F6;
+      --palette-ink: #111827;
+      --palette-muted: #4B5563;
+      --palette-faint: #9CA3AF;
+      --palette-line: #E5E7EB;
+      --palette-line-strong: #D1D5DB;
+      --palette-sage: #D6E5DC;
+      --palette-sage-hover: #BECCC3;
+      --palette-rose: #FCB3B7;
+      --palette-rose-hover: #E29EA2;
+      --palette-blue: #AEE1DD;
+      --palette-blue-hover: #99C8C5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--palette-base);
+      color: var(--palette-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部導覽列（頁首） */
+    header {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--palette-ink);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 分段切換器（俐落微圓角 4px，拒絕大弧度膠囊） */
+    .pill-switcher {
+      display: inline-flex;
+      background-color: var(--palette-subtle);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .pill-btn {
+      background: transparent;
+      border: none;
+      color: var(--palette-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.12s ease-in-out;
+    }
+
+    .pill-btn:hover {
+      color: var(--palette-ink);
+      background-color: var(--palette-base);
+    }
+
+    .pill-btn.active {
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-action {
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+      border: 1px solid var(--palette-ink);
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .btn-action:hover {
+      opacity: 0.88;
+    }
+
+    /* 主內容區 */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 24px;
+      gap: 16px;
+    }
+
+    /* 頂部即時指標列（KPI 指標列） */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--palette-muted);
+    }
+
+    .kpi-val {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--palette-ink);
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    .kpi-sub {
+      font-size: 0.72rem;
+      color: var(--palette-faint);
+    }
+
+    /* 分頁視圖容器 */
+    .tab-view {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* 視圖一：地圖與側欄佈局 */
+    .map-container-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      height: 720px;
+    }
+
+    @media (max-width: 900px) {
+      .map-container-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+
+    .sidebar-panel {
+      background-color: var(--palette-surface);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .map-frame {
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      overflow: hidden;
+      height: 100%;
+      min-height: 480px;
+      background-color: var(--palette-subtle);
+      position: relative;
+    }
+
+    #parking-map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 搜尋與過濾元件 */
+    .search-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-text {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      background-color: var(--palette-base);
+      color: var(--palette-ink);
+      font-size: 0.85rem;
+    }
+
+    .input-text:focus-visible,
+    .btn-action:focus-visible,
+    .pill-btn:focus-visible {
+      outline: 2px solid var(--palette-ink);
+      outline-offset: 1px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .filter-tag {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--palette-muted);
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .filter-tag.selected {
+      background-color: var(--palette-ink);
+      color: var(--palette-base);
+      border-color: var(--palette-ink);
+      font-weight: 700;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--palette-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* 路段清單項目（純文字排版，無 Badge 封裝） */
+    .road-list-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 460px;
+    }
+
+    .road-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .road-card:hover {
+      border-color: var(--palette-line-strong);
+      background-color: var(--palette-surface);
+    }
+
+    .road-card.active-selected {
+      border-color: var(--palette-ink);
+      background-color: var(--palette-subtle);
+    }
+
+    .road-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .road-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--palette-ink);
+    }
+
+    /* 純文字空位數字呈現（取代 Badge 標籤） */
+    .road-avail-text {
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      letter-spacing: -0.01em;
+    }
+
+    .road-avail-text.available {
+      color: #2D6A4F;
+    }
+
+    .road-avail-text.full {
+      color: #A44A4A;
+    }
+
+    .road-avail-text.unknown {
+      color: var(--palette-muted);
+    }
+
+    .road-meta {
+      font-size: 0.75rem;
+      color: var(--palette-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 視圖二：完整資料表格 */
+    .table-container {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      overflow-x: auto;
+      padding: 8px;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background-color: var(--palette-surface);
+      color: var(--palette-ink);
+      padding: 10px 12px;
+      font-weight: 700;
+      border: 1px solid var(--palette-line);
+    }
+
+    table.data-table td {
+      padding: 9px 12px;
+      color: var(--palette-ink);
+      border: 1px solid var(--palette-line);
+    }
+
+    table.data-table tr:hover {
+      background-color: var(--palette-surface);
+    }
+
+    /* 視圖三：智慧費用試算機 */
+    .calc-layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 800px) {
+      .calc-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .calc-form-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .calc-result-card {
+      background-color: var(--palette-surface);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--palette-muted);
+    }
+
+    .price-display {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--palette-ink);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .explanation-box {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* 視圖四：營業臨停專區 */
+    .loading-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .loading-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .loading-card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--palette-ink);
+    }
+
+    .loading-card-meta {
+      font-size: 0.78rem;
+      color: var(--palette-muted);
+      line-height: 1.5;
+    }
+
+    /* 視圖五：儀表板圖表 */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-card {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line);
+      border-radius: 4px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--palette-ink);
+    }
+
+    /* Modal 車格明細彈窗 */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(17, 24, 39, 0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background-color: var(--palette-base);
+      border: 1px solid var(--palette-line-strong);
+      border-radius: 4px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cell-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 8px;
+      padding: 10px 0;
+    }
+
+    .cell-box {
+      border: 1px solid var(--palette-line);
+      border-radius: 2px;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 0.72rem;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+    }
+
+    .cell-box.free {
+      background-color: #EBF5EE;
+      color: #2D6A4F;
+    }
+
+    .cell-box.busy {
+      background-color: #FDE8E9;
+      color: #A44A4A;
+    }
+
+    /* 頁尾 */
+    footer {
+      background-color: var(--palette-surface);
+      border: 1px solid var(--palette-line);
+      padding: 12px 24px;
+      font-size: 0.75rem;
+      color: var(--palette-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部標頭與分段切換器 -->
+  <header>
+    <div class="brand-title">
+      <span>臺北市路邊停車智慧導航與管理系統</span>
+    </div>
+
+    <!-- 分段切換器（俐落微圓角，無 Emoji） -->
+    <nav class="pill-switcher" role="tablist">
+      <button class="pill-btn active" onclick="switchTab('map-view', this)">即時空位地圖</button>
+      <button class="pill-btn" onclick="switchTab('list-view', this)">收費路段清冊</button>
+      <button class="pill-btn" onclick="switchTab('calc-view', this)">費用試算引擎</button>
+      <button class="pill-btn" onclick="switchTab('loading-view', this)">營業臨停專區</button>
+      <button class="pill-btn" onclick="switchTab('stats-view', this)">停車數據儀表板</button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn-action" onclick="refreshLiveData()">即時同步在席資料</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 全域指標摘要（KPI 指標列） -->
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <span class="kpi-label">收費路段總數</span>
+        <span class="kpi-val" id="kpi-total-roads">2,342</span>
+        <span class="kpi-sub">臺北市停車管理工程處登記</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">監測車格總數</span>
+        <span class="kpi-val" id="kpi-monitored-cells">26,438</span>
+        <span class="kpi-sub">即時動態在席監測格位</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">即時可用空位</span>
+        <span class="kpi-val" id="kpi-avail-spaces">載入中...</span>
+        <span class="kpi-sub">剩餘可停放路邊格位數</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">營業共用臨停區</span>
+        <span class="kpi-val" id="kpi-loading-zones">225</span>
+        <span class="kpi-sub">物流外送專用點位</span>
+      </div>
+    </section>
+
+    <!-- 視圖一：即時空位地圖（地圖檢視） -->
+    <div id="map-view" class="tab-view active">
+      <div class="map-container-layout">
+        <!-- 側邊篩選與搜尋欄 -->
+        <div class="sidebar-panel">
+          <div class="search-box">
+            <input type="text" id="map-search-input" class="input-text" placeholder="搜尋路段名稱（例如：南京東路）..." oninput="onSearchFilterChanged()" />
+          </div>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="avail-only-toggle" onchange="onSearchFilterChanged()" />
+            <span>僅顯示目前仍有空位之路段</span>
+          </label>
+
+          <div class="form-group">
+            <span class="form-label">行政分區篩選</span>
+            <div class="filter-pills" id="district-filter-pills">
+              <span class="filter-tag selected" onclick="filterByDistrict('全部', this)">全部行政區</span>
+              <span class="filter-tag" onclick="filterByDistrict('中正區', this)">中正區</span>
+              <span class="filter-tag" onclick="filterByDistrict('大安區', this)">大安區</span>
+              <span class="filter-tag" onclick="filterByDistrict('中山區', this)">中山區</span>
+              <span class="filter-tag" onclick="filterByDistrict('信義區', this)">信義區</span>
+              <span class="filter-tag" onclick="filterByDistrict('松山區', this)">松山區</span>
+              <span class="filter-tag" onclick="filterByDistrict('內湖區', this)">內湖區</span>
+              <span class="filter-tag" onclick="filterByDistrict('士林區', this)">士林區</span>
+              <span class="filter-tag" onclick="filterByDistrict('北投區', this)">北投區</span>
+              <span class="filter-tag" onclick="filterByDistrict('萬華區', this)">萬華區</span>
+              <span class="filter-tag" onclick="filterByDistrict('大同區', this)">大同區</span>
+              <span class="filter-tag" onclick="filterByDistrict('南港區', this)">南港區</span>
+              <span class="filter-tag" onclick="filterByDistrict('文山區', this)">文山區</span>
+            </div>
+          </div>
+
+          <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span class="form-label">路段即時清單</span>
+              <span id="filtered-road-count" style="font-size: 0.72rem; color: var(--palette-muted);">載入中...</span>
+            </div>
+            <div class="road-list-mini" id="road-mini-list"></div>
+          </div>
+        </div>
+
+        <!-- Leaflet GIS 向量地圖 -->
+        <div class="map-frame">
+          <div id="parking-map"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 視圖二：收費路段清冊（清冊檢視） -->
+    <div id="list-view" class="tab-view">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>路段代碼</th>
+              <th>路段名稱</th>
+              <th>行政區</th>
+              <th>收費費率</th>
+              <th>總格位數</th>
+              <th>即時空位狀況</th>
+              <th>使用率</th>
+              <th>格位明細</th>
+            </tr>
+          </thead>
+          <tbody id="full-road-table-body">
+            <tr><td colspan="8" style="text-align: center;">載入資料中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 視圖三：停車費用試算引擎（試算檢視） -->
+    <div id="calc-view" class="tab-view">
+      <div class="calc-layout">
+        <div class="calc-form-card">
+          <h3 style="font-size: 1.05rem; font-weight: 700;">停車費用試算條件設定</h3>
+          
+          <div class="form-group">
+            <label class="form-label">目標路段名稱</label>
+            <input type="text" id="calc-road-input" class="input-text" value="中山北路一段53巷" placeholder="請輸入路段名稱..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">預計停放時長（小時）</label>
+            <select id="calc-duration-select" class="input-text">
+              <option value="0.5">0.5 小時（30分鐘）</option>
+              <option value="1.0">1.0 小時</option>
+              <option value="1.5">1.5 小時</option>
+              <option value="2.0" selected>2.0 小時</option>
+              <option value="2.5">2.5 小時</option>
+              <option value="3.0">3.0 小時</option>
+              <option value="4.0">4.0 小時</option>
+              <option value="6.0">6.0 小時</option>
+              <option value="8.0">8.0 小時（全日停放）</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">進場時間（小時）</label>
+            <select id="calc-hour-select" class="input-text">
+              <option value="8">08:00</option>
+              <option value="9">09:00</option>
+              <option value="10" selected>10:00</option>
+              <option value="11">11:00</option>
+              <option value="13">13:00</option>
+              <option value="15">15:00</option>
+              <option value="17">17:00</option>
+              <option value="19">19:00</option>
+              <option value="21">21:00</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">進場星期</label>
+            <select id="calc-day-select" class="input-text">
+              <option value="1">星期一</option>
+              <option value="2">星期二</option>
+              <option value="3" selected>星期三</option>
+              <option value="4">星期四</option>
+              <option value="5">星期五</option>
+              <option value="6">星期六</option>
+              <option value="7">星期日（多數免收費）</option>
+            </select>
+          </div>
+
+          <button class="btn-action" style="padding: 10px;" onclick="calculateEstimatedFee()">立即試算停車費用</button>
+        </div>
+
+        <div class="calc-result-card">
+          <span class="form-label">預估停車費用試算結果</span>
+          <div class="price-display"><span id="calc-fee-display">100</span> <span style="font-size: 1.2rem; font-weight: 500;">新臺幣元</span></div>
+          <div class="explanation-box" id="calc-explanation-display">
+            正在計算試算結果...
+          </div>
+          <div style="font-size: 0.8rem; color: var(--palette-muted);">
+            備註：試算結果係依據臺北市停車管理工程處公告之路段費率規程與收費起訖時段試算。若遇特殊彈性放假或特殊管制時段，請以現場標誌牌面為準。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 視圖四：營業臨停導航專區（臨停檢視） -->
+    <div id="loading-view" class="tab-view">
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+        <input type="text" id="loading-search-input" class="input-text" style="max-width: 380px;" placeholder="搜尋商圈、路名或地址..." oninput="filterLoadingZones()" />
+        <span style="font-size: 0.8rem; color: var(--palette-muted);">專供貨運物流與外送車輛合法短暫裝卸作業使用</span>
+      </div>
+      <div class="loading-grid" id="loading-zones-grid">
+        載入中...
+      </div>
+    </div>
+
+    <!-- 視圖五：大數據儀表板（數據檢視） -->
+    <div id="stats-view" class="tab-view">
+      <div class="dashboard-grid">
+        <!-- 圖表一：各行政區公有車位供給分佈 -->
+        <div class="chart-card">
+          <span class="chart-title">12 行政區公有路邊與路外停車位供給比較</span>
+          <div style="font-size: 0.75rem; color: var(--palette-muted); margin-bottom: 6px;">單位：格位數（臺北市停車管理工程處月報）</div>
+          <div id="district-chart-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+
+        <!-- 圖表二：35 年停車政策演進數列 -->
+        <div class="chart-card">
+          <span class="chart-title">民國 77 年至今臺北市停車位長期供給演進</span>
+          <div style="font-size: 0.75rem; color: var(--palette-muted); margin-bottom: 6px;">呈現路邊收費化與建築物附設停車空間增長趨勢</div>
+          <div id="historical-chart-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 車格在席狀態彈窗（彈窗對話框） -->
+  <div class="modal-backdrop" id="cell-modal">
+    <div class="modal-dialog">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 id="modal-road-title" style="font-size: 1.1rem; font-weight: 700;">路段在席車格狀況</h3>
+        <button class="btn-action" style="padding: 4px 10px;" onclick="closeModal()">關閉</button>
+      </div>
+      <div id="modal-road-meta" style="font-size: 0.8rem; color: var(--palette-muted);"></div>
+      <div style="display: flex; gap: 12px; font-size: 0.75rem;">
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background:#2D6A4F; border-radius:50%;"></span> 綠色圓點：空位可停</span>
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background:#A44A4A; border-radius:50%;"></span> 紅色圓點：有車佔用／已開單</span>
+      </div>
+      <div class="cell-grid" id="modal-cell-grid"></div>
+    </div>
+  </div>
+
+  <footer>
+    本系統資料由臺北市政府開放資料大平台授權提供｜符合 WCAG 2.1 AAA 級視覺對比規範｜純標準庫無外部重量級依賴架構
+  </footer>
+
+  <!-- Leaflet GIS Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // 全域變數
+    let allRoads = [];
+    let displayedRoads = [];
+    let mapInstance = null;
+    let mapMarkersLayer = null;
+    let currentMarkerEntities = []; // 儲存標記與狀態以支援動態縮放半徑
+    let selectedDistrict = '全部';
+    let allLoadingZones = [];
+
+    // 初始化應用程式
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      fetchRoadsData();
+      fetchOverviewStats();
+      fetchLoadingZones();
+      calculateEstimatedFee();
+    });
+
+    // 分頁切換
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.pill-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+
+      if (tabId === 'map-view' && mapInstance) {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+      }
+      if (tabId === 'stats-view') {
+        renderCharts();
+      }
+    }
+
+    // 初始化 Leaflet GIS 地圖（預設採用簡約灰階底圖）
+    function initMap() {
+      // 臺北市中心坐標
+      mapInstance = L.map('parking-map', {
+        zoomControl: true
+      }).setView([25.0421, 121.5328], 13);
+
+      // 1. 簡約灰階畫布底圖（預設套用，乾淨專業且零干擾）
+      const esriGrayLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16,
+        attribution: '&copy; Esri &copy; DeLorme, NAVTEQ'
+      });
+
+      // 2. 臺灣通用電子地圖（內政部國土測繪中心官方 WMTS）
+      const nlscLayer = L.tileLayer('https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '&copy; 內政部國土測繪中心 臺灣通用電子地圖'
+      });
+
+      // 3. 全球街道地圖
+      const esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '&copy; Esri &copy; OpenStreetMap'
+      });
+
+      // 預設套用灰階底圖
+      esriGrayLayer.addTo(mapInstance);
+
+      // 圖層控制切換器
+      const baseMaps = {
+        '簡約灰階地圖（預設）': esriGrayLayer,
+        '臺灣通用電子地圖': nlscLayer,
+        '全球街道地圖': esriStreetLayer
+      };
+      L.control.layers(baseMaps, null, { position: 'topright' }).addTo(mapInstance);
+
+      mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+
+      // 監聽縮放等級變更：當地圖放大到一定百分比時，圓點相應變大 15% 以上
+      mapInstance.on('zoomend', () => {
+        updateMarkerRadii();
+      });
+    }
+
+    // 依縮放等級動態計算圓點半徑（放大時增幅 15% 以上，縮小時自動收斂避免全圖混亂）
+    function getScaledRadius(isAvailable, isFull, zoom) {
+      let base = isAvailable ? 5.0 : (isFull ? 4.0 : 3.0);
+      if (zoom <= 12) {
+        return base * 0.75;
+      } else if (zoom === 13) {
+        return base * 0.88;
+      } else if (zoom === 14) {
+        return base;
+      } else if (zoom === 15) {
+        // 放大至 15 級時，半徑相應變大 15%
+        return base * 1.15;
+      } else if (zoom === 16) {
+        return base * 1.30;
+      } else {
+        return base * 1.45;
+      }
+    }
+
+    function updateMarkerRadii() {
+      if (!mapInstance) return;
+      const zoom = mapInstance.getZoom();
+      currentMarkerEntities.forEach(item => {
+        const r = getScaledRadius(item.isAvailable, item.isFull, zoom);
+        item.marker.setRadius(r);
+      });
+    }
+
+    // 抓取全域路段資料
+    async function fetchRoadsData() {
+      try {
+        const resp = await fetch('/api/roads?limit=2500');
+        const json = await resp.json();
+        allRoads = json.roads || [];
+        displayedRoads = allRoads;
+        
+        // 更新頂部 KPI
+        const totalAvail = allRoads.reduce((acc, r) => acc + (r.avail_spaces > 0 ? r.avail_spaces : 0), 0);
+        document.getElementById('kpi-avail-spaces').textContent = totalAvail.toLocaleString();
+        
+        updateMapMarkers();
+        renderRoadMiniList();
+        renderFullTable();
+      } catch (err) {
+        console.error('抓取路段資料失敗：', err);
+      }
+    }
+
+    // 更新地圖標記（乾淨向量圓點 CircleMarker，動態縮放支援）
+    function updateMapMarkers() {
+      if (!mapMarkersLayer) return;
+      mapMarkersLayer.clearLayers();
+      currentMarkerEntities = [];
+
+      const currentZoom = mapInstance ? mapInstance.getZoom() : 13;
+      const sliceRoads = displayedRoads.slice(0, 1000);
+
+      sliceRoads.forEach(road => {
+        if (!road.lat || !road.lon) return;
+
+        const isAvailable = road.avail_spaces > 0;
+        const isFull = road.avail_spaces === 0;
+
+        let fillColor = '#ECE5DE';
+        if (isAvailable) {
+          fillColor = '#2D6A4F';
+        } else if (isFull) {
+          fillColor = '#A44A4A';
+        }
+
+        const radius = getScaledRadius(isAvailable, isFull, currentZoom);
+
+        const marker = L.circleMarker([road.lat, road.lon], {
+          radius: radius,
+          fillColor: fillColor,
+          color: '#FFFFFF',
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 0.9
+        });
+
+        // 懸停浮動提示（Tooltip）
+        const tipText = isAvailable ? `${road.name}（空位 ${road.avail_spaces} 格）` : (isFull ? `${road.name}（已額滿）` : `${road.name}（未量測）`);
+        marker.bindTooltip(tipText, {
+          direction: 'top',
+          offset: [0, -4],
+          opacity: 0.95
+        });
+
+        // 點擊詳細 Popup
+        const popupContent = `
+          <div style="font-family:sans-serif; color:#111827; min-width:210px; padding:4px;">
+            <div style="font-weight:700; font-size:14px; margin-bottom:4px;">${road.name}</div>
+            <div style="font-size:12px; color:#4B5563; margin-bottom:6px;">行政區：${road.district}｜路段代碼：${road.road_id}</div>
+            <div style="font-size:12px; margin-bottom:4px;"><strong>收費費率：</strong>${road.fee_str || '一般費率'}</div>
+            <div style="font-size:12px; margin-bottom:4px;"><strong>車位狀況：</strong>剩餘 ${road.avail_spaces > 0 ? road.avail_spaces : 0} 格／共 ${road.total_spaces} 格</div>
+            <div style="margin-top:8px; display:flex; gap:6px;">
+              <button onclick="openRoadModal('${road.road_id}')" style="background:#EBF5EE; border:1px solid #D6E5DC; color:#2D6A4F; font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:600;">查看車格在席</button>
+              <button onclick="setCalcRoad('${road.name}')" style="background:#111827; border:1px solid #111827; color:#FFFFFF; font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:600;">帶入費用試算</button>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        mapMarkersLayer.addLayer(marker);
+
+        currentMarkerEntities.push({
+          marker: marker,
+          isAvailable: isAvailable,
+          isFull: isFull
+        });
+      });
+    }
+
+    // 渲染側欄簡易路段清單（純文字排版，無 Badge）
+    function renderRoadMiniList() {
+      const container = document.getElementById('road-mini-list');
+      document.getElementById('filtered-road-count').textContent = `共 ${displayedRoads.length} 條路段`;
+
+      if (displayedRoads.length === 0) {
+        container.innerHTML = '<div style="font-size:0.8rem; color:var(--palette-muted); padding:10px;">查無符合條件之路段。</div>';
+        return;
+      }
+
+      const showList = displayedRoads.slice(0, 100);
+      container.innerHTML = showList.map(r => {
+        const isAvail = r.avail_spaces > 0;
+        const colorClass = isAvail ? 'available' : (r.avail_spaces === 0 ? 'full' : 'unknown');
+        const availText = isAvail ? `空位 ${r.avail_spaces} 格` : (r.avail_spaces === 0 ? '全滿' : '未量測');
+
+        return `
+          <div class="road-card" onclick="focusRoadOnMap(${r.lat}, ${r.lon}, '${r.road_id}')">
+            <div class="road-header">
+              <span class="road-title">${r.name}</span>
+              <span class="road-avail-text ${colorClass}">${availText}</span>
+            </div>
+            <div class="road-meta">
+              <span>${r.district}｜${r.fee_str || '一般費率'}</span>
+              <span>總位數：${r.total_spaces}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 搜尋與篩選事件
+    function onSearchFilterChanged() {
+      const kw = document.getElementById('map-search-input').value.trim().toLowerCase();
+      const availOnly = document.getElementById('avail-only-toggle').checked;
+
+      displayedRoads = allRoads.filter(r => {
+        const matchDistrict = (selectedDistrict === '全部') || (r.district === selectedDistrict);
+        const matchKw = (!kw) || (r.name.toLowerCase().includes(kw)) || (r.road_id.includes(kw));
+        const matchAvail = (!availOnly) || (r.avail_spaces > 0);
+        return matchDistrict && matchKw && matchAvail;
+      });
+
+      updateMapMarkers();
+      renderRoadMiniList();
+      renderFullTable();
+    }
+
+    function filterByDistrict(dist, elem) {
+      selectedDistrict = dist;
+      document.querySelectorAll('#district-filter-pills .filter-tag').forEach(t => t.classList.remove('selected'));
+      elem.classList.add('selected');
+      onSearchFilterChanged();
+    }
+
+    function focusRoadOnMap(lat, lon, roadId) {
+      if (lat && lon && mapInstance) {
+        mapInstance.setView([lat, lon], 16, { animate: true });
+      }
+    }
+
+    // 渲染清冊表格（純文字數字排版，不使用色塊 Badge）
+    function renderFullTable() {
+      const tbody = document.getElementById('full-road-table-body');
+      const list = displayedRoads.slice(0, 300);
+
+      tbody.innerHTML = list.map(r => {
+        const isAvail = r.avail_spaces > 0;
+        const textColor = isAvail ? '#2D6A4F' : (r.avail_spaces === 0 ? '#A44A4A' : '#68625B');
+        const availText = isAvail ? `${r.avail_spaces} 格可停` : (r.avail_spaces === 0 ? '已額滿' : '未量測');
+
+        return `
+          <tr>
+            <td>${r.road_id}</td>
+            <td><strong>${r.name}</strong></td>
+            <td>${r.district}</td>
+            <td>${r.fee_str || '30元'}</td>
+            <td>${r.total_spaces}</td>
+            <td style="color:${textColor}; font-weight:700; font-family:'JetBrains Mono',monospace;">${availText}</td>
+            <td>${r.usage_rate >= 0 ? Math.round(r.usage_rate * 100) + '%' : '無資料'}</td>
+            <td>
+              <button class="btn-action" style="padding:2px 8px; font-size:0.75rem;" onclick="openRoadModal('${r.road_id}')">查看車格</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 開啟車格在席明細彈窗
+    async function openRoadModal(roadId) {
+      try {
+        const resp = await fetch(`/api/road/${roadId}`);
+        const data = await resp.json();
+        const road = data.road;
+        const cells = data.cells || [];
+
+        document.getElementById('modal-road-title').textContent = `${road.name}（${road.district}）`;
+        document.getElementById('modal-road-meta').textContent = `路段代碼：${road.road_id}｜費率：${road.fee_str || '一般'}｜目前總格位數：${road.total_spaces}｜剩餘可用：${road.avail_spaces}`;
+
+        const grid = document.getElementById('modal-cell-grid');
+        if (cells.length === 0) {
+          grid.innerHTML = '<div style="font-size:0.85rem; color:var(--palette-muted); padding:10px;">該路段目前無回傳獨立在席車格狀態。</div>';
+        } else {
+          grid.innerHTML = cells.map(c => {
+            const isFree = c.cell_status === 2;
+            const cls = isFree ? 'free' : 'busy';
+            const label = isFree ? '可停車' : '已佔用';
+            return `
+              <div class="cell-box ${cls}">
+                <div>格號 ${c.ps_id}</div>
+                <div style="font-size:0.65rem; font-weight:500;">${label}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        document.getElementById('cell-modal').classList.add('show');
+      } catch (err) {
+        console.error('開啟車格彈窗失敗：', err);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('cell-modal').classList.remove('show');
+    }
+
+    function setCalcRoad(roadName) {
+      document.getElementById('calc-road-input').value = roadName;
+      switchTab('calc-view', document.querySelectorAll('.pill-btn')[2]);
+      calculateEstimatedFee();
+    }
+
+    // 費用試算引擎（試算檢視）
+    async function calculateEstimatedFee() {
+      const roadName = encodeURIComponent(document.getElementById('calc-road-input').value.trim());
+      const duration = document.getElementById('calc-duration-select').value;
+      const startHour = document.getElementById('calc-hour-select').value;
+      const day = document.getElementById('calc-day-select').value;
+
+      try {
+        const url = `/api/fee-estimate?road_name=${roadName}&duration=${duration}&start_hour=${startHour}&day=${day}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        document.getElementById('calc-fee-display').textContent = data.estimated_fee;
+        document.getElementById('calc-explanation-display').innerHTML = `
+          <strong>【試算路段】</strong> ${data.road_name}<br>
+          <strong>【費率標準】</strong> ${data.fee_str}（收費時段：${data.charge_time_range}，星期：${data.charge_days}）<br>
+          <strong>【收費說明】</strong> ${data.explanation}
+        `;
+      } catch (err) {
+        console.error('試算失敗：', err);
+      }
+    }
+
+    // 營業臨停專區（臨停檢視）
+    async function fetchLoadingZones() {
+      try {
+        const resp = await fetch('/api/loading-zones');
+        const json = await resp.json();
+        allLoadingZones = json.loading_zones || [];
+        renderLoadingZonesList(allLoadingZones);
+      } catch (err) {
+        console.error('抓取營業臨停失敗：', err);
+      }
+    }
+
+    function renderLoadingZonesList(list) {
+      const container = document.getElementById('loading-zones-grid');
+      container.innerHTML = list.map(z => {
+        return `
+          <div class="loading-card">
+            <div class="loading-card-title">${z.district}｜${z.address}</div>
+            <div class="loading-card-meta">
+              <strong>格位數量：</strong>共 ${z.spaces} 格<br>
+              <strong>鄰近地標：</strong>${z.nearby || '鄰近商圈'}<br>
+              <strong>坐標位置：</strong>${z.lat.toFixed(5)}, ${z.lon.toFixed(5)}
+            </div>
+            <button class="btn-action" style="padding:4px 8px; font-size:0.75rem; align-self:flex-start;" onclick="focusOnMapAndSwitch(${z.lat}, ${z.lon})">在地圖上查看</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterLoadingZones() {
+      const kw = document.getElementById('loading-search-input').value.trim().toLowerCase();
+      const filtered = allLoadingZones.filter(z => {
+        return z.district.toLowerCase().includes(kw) || z.address.toLowerCase().includes(kw) || (z.nearby && z.nearby.toLowerCase().includes(kw));
+      });
+      renderLoadingZonesList(filtered);
+    }
+
+    function focusOnMapAndSwitch(lat, lon) {
+      switchTab('map-view', document.querySelectorAll('.pill-btn')[0]);
+      setTimeout(() => {
+        mapInstance.setView([lat, lon], 17, { animate: true });
+        L.popup()
+          .setLatLng([lat, lon])
+          .setContent('<div style="font-weight:700;">營業用共用臨停區</div><div>專供貨運外送短暫作業</div>')
+          .openOn(mapInstance);
+      }, 300);
+    }
+
+    // 抓取儀表板與大數據
+    let statsDataCache = null;
+    async function fetchOverviewStats() {
+      try {
+        const resp = await fetch('/api/stats');
+        statsDataCache = await resp.json();
+      } catch (err) {
+        console.error('抓取統計大數據失敗：', err);
+      }
+    }
+
+    // 渲染儀表板圖表（純 SVG／HTML 長條圖）
+    function renderCharts() {
+      if (!statsDataCache) return;
+
+      // 1. 行政區供給長條圖
+      const dContainer = document.getElementById('district-chart-container');
+      const districts = statsDataCache.districts || [];
+      const maxCar = Math.max(...districts.map(d => d.car_total), 1);
+
+      dContainer.innerHTML = districts.map(d => {
+        const onstreetPercent = (d.car_onstreet / maxCar) * 100;
+        const offstreetPercent = (d.car_offstreet / maxCar) * 100;
+
+        return `
+          <div style="display:flex; flex-direction:column; gap:2px; font-size:0.75rem;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="font-weight:600;">${d.district}</span>
+              <span style="color:var(--palette-muted);">路邊 ${d.car_onstreet} 格 ＋ 路外 ${d.car_offstreet} 格（總計 ${d.car_total}）</span>
+            </div>
+            <div style="display:flex; width:100%; height:12px; background:var(--palette-subtle); border-radius:2px; overflow:hidden; border:1px solid var(--palette-line);">
+              <div style="width:${onstreetPercent}%; background:var(--palette-sage);" title="路邊停車格"></div>
+              <div style="width:${offstreetPercent}%; background:var(--palette-blue);" title="路外立體/平面停車格"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. 歷史 35 年演進
+      const hContainer = document.getElementById('historical-chart-container');
+      const historical = statsDataCache.historical || [];
+      const sampleYears = historical.filter((_, idx) => idx % 4 === 0 || idx === historical.length - 1);
+      const maxTotal = Math.max(...sampleYears.map(h => h.total_spaces), 1);
+
+      hContainer.innerHTML = sampleYears.map(h => {
+        const pct = (h.total_spaces / maxTotal) * 100;
+        return `
+          <div style="display:flex; flex-direction:column; gap:2px; font-size:0.75rem;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="font-weight:600;">${h.period}</span>
+              <span style="color:var(--palette-muted);">總格位數：${h.total_spaces.toLocaleString()} 格（路邊：${h.onstreet_spaces.toLocaleString()}）</span>
+            </div>
+            <div style="display:flex; width:100%; height:14px; background:var(--palette-subtle); border-radius:2px; overflow:hidden; border:1px solid var(--palette-line);">
+              <div style="width:${pct}%; background:var(--palette-sage); display:flex; align-items:center; padding-left:4px; font-size:0.65rem; font-weight:700;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 觸發即時資料同步
+    async function refreshLiveData() {
+      const btn = document.querySelector('.btn-action');
+      const originalText = btn.textContent;
+      btn.textContent = '同步資料中...';
+      btn.disabled = true;
+
+      try {
+        const resp = await fetch('/api/refresh', { method: 'POST' });
+        const res = await resp.json();
+        alert(res.message || '即時在席資料同步成功！');
+        fetchRoadsData();
+        fetchOverviewStats();
+      } catch (err) {
+        alert('同步失敗：' + err);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

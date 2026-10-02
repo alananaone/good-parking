@@ -1,0 +1,15 @@
+# Python 快取
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 大型圖資壓縮原始檔 (54MB，避免超過 GitHub 建議大小)
+downloads/*.zip
+
+# 作業系統與編輯器暫存
+.DS_Store
+.idea/
+.vscode/
+
+# Vercel 佈署暫存
+.vercel/
