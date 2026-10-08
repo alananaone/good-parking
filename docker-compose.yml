@@ -1,0 +1,12 @@
+services:
+  parking-sync:
+    build: .
+    container_name: good-parking-sync
+    restart: always
+    volumes:
+      # 掛載本地目錄，確保歷史日誌與 live_roads.json 持久化保存在 NAS 上
+      - .:/app
+      # 若 NAS 有設定 SSH 金鑰推送到 GitHub，可直接掛載 ~/.ssh
+      - ~/.ssh:/root/.ssh:ro
+    environment:
+      - TZ=Asia/Taipei
